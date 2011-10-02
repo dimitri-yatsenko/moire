@@ -35,15 +35,11 @@ show(311, img, 'original')
 h,w,d = img.shape
 
 # generate gratings
-# carrier is horizontal gradient with period T
 carrier = np.tile(np.r_[0.0:w].reshape(1,w,1), (h,1,3))/T
 grating1 = grating(carrier-(1-img)/4)
 grating2 = grating(carrier+(1-img)/4)
 
 # visualize gratings and their superposition
-grating1 = grating1.reshape(h,w,3)
-grating2 = grating2.reshape(h,w,3)
-
 show(323, grating1, 'grating 1')
 show(324, grating2, 'grating 2')
 show(313, grating1*grating2, 'superposition')
