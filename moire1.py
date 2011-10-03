@@ -24,11 +24,10 @@ def show(sub, img, title):
     mp.imshow(img)
     mp.axis('off')
     mp.title(title)
-    mp.gray()
 
 
 # load image and magnify
-img = mp.imread('./images/mona512.png')
+img = mp.imread('./images/audrey512.png')
 img = ndint.zoom(img,(mag,mag,1))
 img = ndfilt.gaussian_filter(img, (T/4,T/4,0))
 show(311, img, 'original')
