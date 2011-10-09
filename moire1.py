@@ -43,5 +43,4 @@ show(323, grating1, 'grating 1')
 show(324, grating2, 'grating 2')
 show(313, grating1*grating2, 'superposition')
 
-fig.savefig('./results/moire1.png', dpi=600)
-fig.savefig('./results/moire1.pdf', dpi=600)
+fig.savefig('./results/moire1.png', dpi=300)

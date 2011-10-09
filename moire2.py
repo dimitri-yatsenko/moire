@@ -30,10 +30,10 @@ def show(sub, img, title):
 # load image and magnify
 img1 = mp.imread('./images/audrey512.png')
 img2 = mp.imread('./images/mona512.png')
+img1 = ndfilt.gaussian_filter(img1, (T/4.0/mag, T/4.0/mag, 0))
+img2 = ndfilt.gaussian_filter(img2, (T/4.0/mag, T/4.0/mag, 0))
 img1 = ndint.zoom(img1,(mag,mag,1))
 img2 = ndint.zoom(img2,(mag,mag,1))
-img1 = ndfilt.gaussian_filter(img1, (T/4,T/4,0))
-img2 = ndfilt.gaussian_filter(img2, (T/4,T/4,0))
 show(321, img1, 'original')
 show(322, img2, 'original')
 h,w,d = img1.shape
@@ -44,16 +44,17 @@ g1 = carrier
 g2 = carrier.copy()
 
 # iterative adjustment of gratings to images
-L = 0.01    # learning rate
+L = 0.04    # learning rate
 M = 16      # multi-res iteration period
-for i in range(5001):
+niter = 1025;  # of iterations
+for i in range(niter):
     # randomize offset for smoothness
     err1 = (1-img1)/2 - (g1[0:-offset,:,:] - g2[offset:,:,:])
     err2 = (1-img2)/2 - (g2[0:-offset,:,:] - g1[offset:,:,:])
 
-    # smooth error occasinally to ensure smootheness of gratings
+    # multires iteration to improve convergence
     if i%M==0:
-        print 'Iteration', i
+        print 'Iteration %4d/%5d' % (i,niter) 
         err1 = M*ndfilt.gaussian_filter1d(err1, sigma=T/6.0, axis=0, mode='constant')
         err2 = M*ndfilt.gaussian_filter1d(err2, sigma=T/6.0, axis=0, mode='constant')
 
@@ -61,7 +62,7 @@ for i in range(5001):
     g1[0:-offset,:,:] += L*err1
     g2[offset:,:,:]   -= L*err1
     g2[0:-offset,:,:] += L*err2
-    g1[offset:,:,:]   -= L*err1
+    g1[offset:,:,:]   -= L*err2
 
 g1 = grating(g1)
 g2 = grating(g2)
@@ -77,5 +78,4 @@ s2 = np.concatenate((e,g2),0)*np.concatenate((g1,e),0)
 show(325, s1, 'superposition 1')
 show(326, s2, 'superposition 2')
 
-fig.savefig('./results/moire2.png', dpi=600)
-fig.savefig('./results/moire2.pdf', dpi=600)
+fig.savefig('./results/moire2.png', dpi=300)
