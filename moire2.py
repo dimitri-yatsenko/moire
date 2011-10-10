@@ -4,11 +4,10 @@ import scipy.ndimage.filters as ndfilt
 import scipy.ndimage.interpolation as ndint
 
 
-fig = mp.figure(figsize=(8,10))
-T = 30       # grating period in pixels. 
-mag = 2      # magnification factor
-offset = 128 # offset in pixels of the altered image
-
+T = 1./40        # grating period as fraction of image width
+mag = 2          # image upsamping factor
+offset = 1./8    # offset in pixels of the altered image
+hsigma = T/4     # sigma for gaussian smoothing along horizontal dimension
 
 def grating(phaseImage):
     """ 
@@ -19,7 +18,7 @@ def grating(phaseImage):
 
 def show(sub, img, title):
     """
-    display the image
+    paste image in figure
     """
     mp.subplot(sub)
     mp.imshow(img)
@@ -27,43 +26,51 @@ def show(sub, img, title):
     mp.title(title)
 
 
-# load image and magnify
+# load original images, smooth, upsample, and display
 img1 = mp.imread('./images/audrey512.png')
 img2 = mp.imread('./images/mona512.png')
-img1 = ndfilt.gaussian_filter(img1, (T/4.0/mag, T/4.0/mag, 0))
-img2 = ndfilt.gaussian_filter(img2, (T/4.0/mag, T/4.0/mag, 0))
+height, width, depth = img1.shape    # images are assumed to be equal in size
+img1 = ndfilt.gaussian_filter1d(img1, sigma=hsigma*width, axis=1)
+img2 = ndfilt.gaussian_filter1d(img2, sigma=hsigma*width, axis=1)
 img1 = ndint.zoom(img1,(mag,mag,1))
 img2 = ndint.zoom(img2,(mag,mag,1))
+
+fig = mp.figure(figsize=(8,10))
 show(321, img1, 'original')
 show(322, img2, 'original')
-h,w,d = img1.shape
+
+# convert parameters to pixels
+height, width, depth = img1.shape
+T = round(T*width)  
+offset = round(offset*height)
 
 # carrier phase image: horizontal gradient with slope 1/T
-carrier = np.tile(np.r_[0.0:w].reshape(1,w,1), (h+offset,1,3))/T
+carrier = np.tile(np.r_[0.0:width].reshape(1,width,1), (height+offset,1,3))/T
 g1 = carrier
 g2 = carrier.copy()
 
 # iterative adjustment of gratings to images
-L = 0.04    # learning rate
-M = 16      # multi-res iteration period
-niter = 1025;  # of iterations
-for i in range(niter):
-    # randomize offset for smoothness
-    err1 = (1-img1)/2 - (g1[0:-offset,:,:] - g2[offset:,:,:])
-    err2 = (1-img2)/2 - (g2[0:-offset,:,:] - g1[offset:,:,:])
+L = 0.04       # learning rate
+niter = 501    # of iterations
+maxCurvature = 0.001/T  # controls grating smoothness
 
-    # multires iteration to improve convergence
-    if i%M==0:
-        print 'Iteration %4d/%5d' % (i,niter) 
-        err1 = M*ndfilt.gaussian_filter1d(err1, sigma=T/6.0, axis=0, mode='constant')
-        err2 = M*ndfilt.gaussian_filter1d(err2, sigma=T/6.0, axis=0, mode='constant')
+for i in range(niter):
+    if i % 25 == 0:
+        print "iteration [%4d/%4d]" % (i, niter)
 
     # update gratings
-    g1[0:-offset,:,:] += L*err1
-    g2[offset:,:,:]   -= L*err1
-    g2[0:-offset,:,:] += L*err2
-    g1[offset:,:,:]   -= L*err2
+    err1 = (1-img1)/2 - (g1[:-offset,:,:] - g2[offset:,:,:])
+    err2 = (1-img2)/2 - (g2[:-offset,:,:] - g1[offset:,:,:])
+    g1[:-offset,:,:] += L*err1
+    g2[offset:,:,:] -= L*err1
+    g2[:-offset,:,:] += L*err2
+    g1[offset:,:,:] -= L*err2
 
+    # enforce grating smoothness by clipping the laplacian
+    avg = (g1[2:,:,:]+g1[:-2,:,:])/2
+    g1[1:-1,:,:] = g1[1:-1,:,:].clip(avg-maxCurvature, avg+maxCurvature)
+
+print 'saving image...'
 g1 = grating(g1)
 g2 = grating(g2)
 
@@ -72,9 +79,9 @@ show(323, g1, 'grating 1')
 show(324, g2, 'grating 2')
 
 # visualize superpositions
-e = np.ones((offset,w,d))
-s1 = np.concatenate((e,g1),0)*np.concatenate((g2,e),0) 
-s2 = np.concatenate((e,g2),0)*np.concatenate((g1,e),0)
+e = np.ones((offset, width, depth))
+s1 = np.vstack((e, g1))*np.vstack((g2, e)) 
+s2 = np.vstack((e, g2))*np.vstack((g1, e))
 show(325, s1, 'superposition 1')
 show(326, s2, 'superposition 2')
 

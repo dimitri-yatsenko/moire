@@ -5,8 +5,8 @@ import scipy.ndimage.interpolation as ndint
 
 
 fig = mp.figure(figsize=(8,10))
-T = 40     # grating period in pixels
-mag = 4    # magnification factor
+T = 20     # grating period in pixels
+mag = 2    # magnification factor
 
 
 def grating(phaseImage):
@@ -18,7 +18,7 @@ def grating(phaseImage):
 
 def show(sub, img, title):
     """
-    display the image
+    paste image in figure
     """
     mp.subplot(sub)
     mp.imshow(img)

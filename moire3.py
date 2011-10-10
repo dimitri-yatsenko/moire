@@ -4,10 +4,10 @@ import scipy.ndimage.filters as ndfilt
 import scipy.ndimage.interpolation as ndint
 
 
-fig = mp.figure(figsize=(8,10))
-T = 30       # grating period in pixels. 
-mag = 3      # magnification factor
-offset = 256 # offset in pixels of the altered image
+T = 1./40        # grating period as fraction of image width
+mag = 2          # image upsamping factor
+offset = 1./8    # offset in pixels of the altered image
+hsigma = T/4     # sigma for gaussian smoothing along horizontal dimension
 
 
 def grating(phaseImage):
@@ -27,41 +27,50 @@ def show(sub, img, title):
     mp.title(title)
 
 
-# load image and magnify
+# load original image, smooth, upsample, and display
 img = mp.imread('./images/audrey512.png')
-img = ndfilt.gaussian_filter(img, (T/4.0/mag, T/4.0/mag, 0))
+height, width, depth = img.shape
+img = ndfilt.gaussian_filter1d(img, sigma=hsigma*width, axis=1)
 img = ndint.zoom(img,(mag,mag,1))
+
+fig = mp.figure(figsize=(8,10))
 show(311, img, 'original')
-h,w,d = img.shape
+
+# convert parameters to pixels
+height, width, depth = img.shape
+T = round(T*width)
+offset = round(offset*height)
 
 # carrier phase image: horizontal gradient with slope 1/T
-g = np.tile(np.r_[0.0:w].reshape(1,w,1), (h+offset,1,3))/T
+g = np.tile(np.r_[0.0:width].reshape(1, width, 1), (height+offset,1,3))/T
 
 # iterative adjustment of gratings to images
 L = 0.04    # learning rate
-M = 20      # multi-res iteration period
-niter = 1001;  # of iterations
+niter = 501   # of iterations
+maxCurvature = 0.001/T
+
 for i in range(niter):
-    # randomize offset for smoothness
+    if i % 25 == 0:
+        print "iteration [%4d/%4d]" % (i, niter)
+
+    # update grating
     err = (1-img)/2 - (g[0:-offset,:,:] - g[offset:,:,:])
-
-    # multires iteration to improve convergence
-    if i%M==0:
-        print 'Iteration %4d/%5d' % (i,niter) 
-        err = M*ndfilt.gaussian_filter1d(err, sigma=T/6.0, axis=0, mode='constant')
-
-    # update gratings
     g[0:-offset,:,:] += L*err
     g[offset:,:,:]   -= L*err
 
+    # enforce grating smoothness by clipping the laplacian
+    avg = (g[2:,:,:]+g[:-2,:,:])/2
+    g[1:-1,:,:] = g[1:-1,:,:].clip(avg-maxCurvature, avg+maxCurvature)
+
+print 'saving image...'
 g = grating(g)
 
 # visualize gratings 
 show(312, g, 'grating')
 
 # visualize superpositions
-e = np.ones((offset,w,d))
-s = np.concatenate((e,g),0)*np.concatenate((g,e),0) 
+e = np.ones((offset, width, depth))
+s = np.vstack((e, g))*np.vstack((g, e)) 
 show(313, s, 'superposition')
 
 fig.savefig('./results/moire3.png', dpi=300)
