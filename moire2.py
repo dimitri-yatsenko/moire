@@ -3,11 +3,10 @@ import matplotlib.pyplot as mp
 import scipy.ndimage.filters as ndfilt
 import scipy.ndimage.interpolation as ndint
 
-
 T = 1./40        # grating period as fraction of image width
 mag = 2          # image upsamping factor
 offset = 1./8    # superposition offset
-hsigma = T/4     # sigma for gaussian smoothing along horizontal dimension
+hsigma = T/4.     # sigma for gaussian smoothing along horizontal dimension
 
 def grating(phaseImage):
     """ 
@@ -45,9 +44,8 @@ T = round(T*width)
 offset = round(offset*height)
 
 # carrier phase image: horizontal gradient with slope 1/T
-carrier = np.tile(np.r_[0.0:width].reshape(1,width,1), (height+offset,1,3))/T
-g1 = carrier
-g2 = carrier.copy()
+g1 = np.fromfunction(lambda y,x,d: x/T, (height+offset, width, depth))
+g2 = g1.copy()
 
 # iterative adjustment of gratings to images
 L = 0.04       # learning rate

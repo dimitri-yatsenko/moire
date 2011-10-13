@@ -42,7 +42,7 @@ T = round(T*width)
 offset = round(offset*height)
 
 # carrier phase image: horizontal gradient with slope 1/T
-g = fromfunction(lambda y,x,d: x/T, (height+offset,width,3))
+g = np.fromfunction(lambda y,x,d: x/T, (height+offset,width,3))
 
 # iterative adjustment of gratings to images
 L = 0.04    # learning rate
