@@ -31,10 +31,10 @@ img = mp.imread('./images/audrey512.png')
 img = ndint.zoom(img,(mag,mag,1))
 img = ndfilt.gaussian_filter(img, (T/4,T/4,0))
 show(311, img, 'original')
-h,w,d = img.shape
+height,width,depth = img.shape
 
 # generate gratings
-carrier = np.tile(np.r_[0.0:w].reshape(1,w,1), (h,1,3))/T
+carrier = fromfunction(lambda y,x,d: x/T, img.shape) 
 grating1 = grating(carrier-(1-img)/4)
 grating2 = grating(carrier+(1-img)/4)
 

@@ -6,7 +6,7 @@ import scipy.ndimage.interpolation as ndint
 
 T = 1./40        # grating period as fraction of image width
 mag = 2          # image upsamping factor
-offset = 1./8    # offset in pixels of the altered image
+offset = 1./8    # superposition offset
 hsigma = T/4     # sigma for gaussian smoothing along horizontal dimension
 
 
@@ -42,7 +42,7 @@ T = round(T*width)
 offset = round(offset*height)
 
 # carrier phase image: horizontal gradient with slope 1/T
-g = np.tile(np.r_[0.0:width].reshape(1, width, 1), (height+offset,1,3))/T
+g = fromfunction(lambda y,x,d: x/T, (height+offset,width,3))
 
 # iterative adjustment of gratings to images
 L = 0.04    # learning rate

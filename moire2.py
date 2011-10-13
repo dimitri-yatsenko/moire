@@ -6,7 +6,7 @@ import scipy.ndimage.interpolation as ndint
 
 T = 1./40        # grating period as fraction of image width
 mag = 2          # image upsamping factor
-offset = 1./8    # offset in pixels of the altered image
+offset = 1./8    # superposition offset
 hsigma = T/4     # sigma for gaussian smoothing along horizontal dimension
 
 def grating(phaseImage):
